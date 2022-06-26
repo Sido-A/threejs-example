@@ -80,7 +80,7 @@ light.position.set(0, 0, 1);
 scene.add(light);
 
 const backLight = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(0, 0, -1);
+backLight.position.set(0, 0, -1);
 scene.add(backLight);
 
 const onWindowResize = () => {
@@ -95,3 +95,13 @@ const animate = () => {
 };
 window.addEventListener("resize", onWindowResize, false);
 animate();
+
+const mouse = {
+  x: undefined,
+  y: undefined,
+};
+addEventListener("mousemove", (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  console.log(mouse);
+});
