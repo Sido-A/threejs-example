@@ -29,6 +29,7 @@ const refreshGeometry = () => {
     world.plane.widthSegments,
     world.plane.heightSegments
   );
+
   const { array } = planeMesh.geometry.attributes.position;
   for (let i = 0; i < array.length; i += 3) {
     const x = array[i];
@@ -38,6 +39,7 @@ const refreshGeometry = () => {
   }
 };
 
+const rayCaster = new THREE.Raycaster();
 const camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
@@ -53,15 +55,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 new OrbitControls(camera, renderer.domElement);
-// const boxGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-// const boxMaterial = new THREE.MeshNormalMaterial();
-// const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
-// scene.add(boxMesh);
 const planeGeometry = new THREE.PlaneGeometry(5, 5, 10, 10);
 const planeMaterial = new THREE.MeshPhongMaterial({
-  color: 0xff0000,
   side: THREE.DoubleSide,
   flatShading: THREE.FlatShading,
+  vertexColors: true,
 });
 const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
 scene.add(planeMesh);
@@ -75,6 +73,15 @@ for (let i = 0; i < array.length; i += 3) {
   array[i + 2] = z + Math.random();
 }
 
+const colors = [];
+const { count } = planeMesh.geometry.attributes.position;
+for (let i = 0; i < count; i++) {
+  colors.push(1, 1, 1);
+}
+planeMesh.geometry.setAttribute(
+  "color",
+  new THREE.BufferAttribute(new Float32Array(colors), 3)
+);
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(0, 0, 1);
 scene.add(light);
@@ -89,19 +96,38 @@ const onWindowResize = () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 };
 
-const animate = () => {
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-};
-window.addEventListener("resize", onWindowResize, false);
-animate();
-
 const mouse = {
   x: undefined,
   y: undefined,
 };
+
+const animate = () => {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+  rayCaster.setFromCamera(mouse, camera);
+  const intersects = rayCaster.intersectObject(planeMesh);
+  if (intersects.length > 0) {
+    const intersectsFace = intersects[0].face;
+    const colorAttribute = intersects[0].object.geometry.attributes.color;
+    colorAttribute.setX(intersectsFace.a, 0);
+    colorAttribute.setY(intersectsFace.a, 2);
+    colorAttribute.setZ(intersectsFace.a, 1);
+
+    colorAttribute.setX(intersectsFace.b, 0);
+    colorAttribute.setY(intersectsFace.b, 2);
+    colorAttribute.setZ(intersectsFace.b, 1);
+
+    colorAttribute.setX(intersectsFace.c, 0);
+    colorAttribute.setY(intersectsFace.c, 2);
+    colorAttribute.setZ(intersectsFace.c, 1);
+
+    colorAttribute.needsUpdate = true;
+  }
+};
+window.addEventListener("resize", onWindowResize, false);
+animate();
+
 addEventListener("mousemove", (e) => {
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-  console.log(mouse);
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 });
